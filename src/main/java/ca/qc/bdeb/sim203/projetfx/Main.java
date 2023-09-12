@@ -31,7 +31,10 @@ public class Main extends Application {
     private ImageView mario;
     private QuelMario selectionCourante = QuelMario.MARIO_CLASSIQUE;
     private boolean marioRegardeVersLaDroite = true;
-    private double hauteurArrierPlan;
+    // la hauteur de la premiere image
+    private double hauteurArrierePlanMarioClassique;
+    // la largeur calculée
+    private double largeurCalculeeArrierePlanMarioWorld;
     private double rapportImageVersusPane;
     private double positionSourisX = 0;
     private double positionSourisY = 0;
@@ -46,7 +49,7 @@ public class Main extends Application {
             if (imagesArrierePlan[i] == null) {
                 imagesArrierePlan[i] = new Image(arrierePlans[i]);
                 if (i == QuelMario.MARIO_CLASSIQUE.ordinal()) {
-                    hauteurArrierPlan = imagesArrierePlan[i].getHeight();
+                    hauteurArrierePlanMarioClassique = imagesArrierePlan[i].getHeight();
                 } else {
                     imagesArrierePlan[i] = new Image(arrierePlans[i]);
                 }
@@ -94,8 +97,12 @@ public class Main extends Application {
                         ? imagesMarioGauche[selectionCourante.ordinal()]
                         : imagesMarioDroite[selectionCourante.ordinal()]);
                 double nouveauX = arrierePlan.getX() - diff;
+                // one ne veut pas avoir l'image avec du blanc à la gauche
                 if (nouveauX > 0)
                     nouveauX = 0;
+                // on ne veut pas trop décaler l'image vers la gauche
+                if (nouveauX < -largeurCalculeeArrierePlanMarioWorld + imagePane.getWidth())
+                    nouveauX = -largeurCalculeeArrierePlanMarioWorld + imagePane.getWidth();
 
                 arrierePlan.setX(nouveauX);
             }
@@ -112,7 +119,7 @@ public class Main extends Application {
         arrierePlan.setX(0);
         arrierePlan.setY(0);
         if (selectionCourante == QuelMario.MARIO_WORLD) {
-            arrierePlan.setFitHeight(hauteurArrierPlan);
+            arrierePlan.setFitHeight(hauteurArrierePlanMarioClassique);
             arrierePlan.setPreserveRatio(true);
             System.out.println("imagesArrierePlan[selectionCourante.ordinal()].getWidth() = " + imagesArrierePlan[selectionCourante.ordinal()].getWidth());
             System.out.println("imagesArrierePlan[selectionCourante.ordinal()].getHeight() = " + imagesArrierePlan[selectionCourante.ordinal()].getHeight());
@@ -120,7 +127,9 @@ public class Main extends Application {
             System.out.println("arrierePlan.getFitHeight() = " + arrierePlan.getFitHeight());
             System.out.println("imagePane.getWidth() = " + imagePane.getWidth());
             System.out.println("imagePane.getHeight() = " + imagePane.getHeight());
-            rapportImageVersusPane = imagesArrierePlan[selectionCourante.ordinal()].getWidth() / imagesArrierePlan[selectionCourante.ordinal()].getHeight() *  imagePane.getHeight() / imagePane.getWidth();
+            // la largeur de l'arriere plan
+            largeurCalculeeArrierePlanMarioWorld = imagesArrierePlan[selectionCourante.ordinal()].getWidth() / imagesArrierePlan[selectionCourante.ordinal()].getHeight() *  imagePane.getHeight();
+            rapportImageVersusPane =  largeurCalculeeArrierePlanMarioWorld / imagePane.getWidth();
         }
         mario.setImage(marioRegardeVersLaDroite
                 ? imagesMarioDroite[selectionCourante.ordinal()]
