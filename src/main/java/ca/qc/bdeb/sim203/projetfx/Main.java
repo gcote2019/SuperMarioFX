@@ -127,6 +127,7 @@ public class Main extends Application {
             }
         });
         stage.setScene(scene);
+        stage.getIcons().add(imagesMarioDroite[QuelMario.MARIO_CLASSIQUE.ordinal()]);
         stage.setTitle("Mario");
         stage.show();
     }
