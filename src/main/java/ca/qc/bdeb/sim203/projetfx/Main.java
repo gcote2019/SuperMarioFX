@@ -6,6 +6,7 @@ import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -15,6 +16,8 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
+
+    final static double TAILLE = 15;
     public static void main(String[] args) {
         launch(args);
     }
@@ -27,21 +30,22 @@ public class Main extends Application {
     private Image[] imagesMarioDroite = new Image[marioDroite.length];
     private Image[] imagesMarioGauche = new Image[marioGauche.length];
 
-    private ImageView arrierePlan;
+    // deux arrierePlans et je ne vais que basculer entre les deux
+    private ImageView[] arrierePlanViews;
     private ImageView mario;
-    private QuelMario selectionCourante = QuelMario.MARIO_CLASSIQUE;
-    private boolean marioRegardeVersLaDroite = true;
+    private QuelMario selectionCourante = QuelMario.MARIO_WORLD;
+
     // la hauteur de la premiere image
     private double hauteurArrierePlanMarioClassique;
-    // la largeur calculée
-    private double largeurCalculeeArrierePlanMarioWorld;
-    private double rapportImageVersusPane;
+    private double largeurArrierePlanMarioClassique;
+    private double largeurArrierePlanMarioWorld;
+    private boolean marioRegardeVersLaDroite = true;
     private double positionSourisX = 0;
     private double positionSourisY = 0;
 
 
     Pane imagePane;
-
+    ScrollPane scrollPane;
 
     private void creerImages() {
 
@@ -50,8 +54,11 @@ public class Main extends Application {
                 imagesArrierePlan[i] = new Image(arrierePlans[i]);
                 if (i == QuelMario.MARIO_CLASSIQUE.ordinal()) {
                     hauteurArrierePlanMarioClassique = imagesArrierePlan[i].getHeight();
+                    largeurArrierePlanMarioClassique = imagesArrierePlan[i].getWidth();
                 } else {
-                    imagesArrierePlan[i] = new Image(arrierePlans[i]);
+                    Image image = new Image(arrierePlans[i]);
+                    largeurArrierePlanMarioWorld = imagesArrierePlan[i].getWidth() / imagesArrierePlan[i].getHeight() *  hauteurArrierePlanMarioClassique;
+                    imagesArrierePlan[i] = new Image(arrierePlans[i], largeurArrierePlanMarioWorld, hauteurArrierePlanMarioClassique, true, true);
                 }
             }
             if (imagesMarioDroite[i] == null) {
@@ -67,79 +74,56 @@ public class Main extends Application {
     private Pane creerImagePane() {
         creerImages();
 
+        scrollPane = new ScrollPane();
         imagePane = new Pane();
 
-        arrierePlan = new ImageView(imagesArrierePlan[selectionCourante.ordinal()]);
-        imagePane.getChildren().add(arrierePlan);
+        arrierePlanViews = new ImageView[QuelMario.values().length];
+        for (var quel: QuelMario.values()) {
+            arrierePlanViews[quel.ordinal()] = new ImageView(imagesArrierePlan[quel.ordinal()]);
+            arrierePlanViews[quel.ordinal()].setFitHeight(hauteurArrierePlanMarioClassique);
+        }
+        scrollPane.setContent(arrierePlanViews[selectionCourante.ordinal()] );
+
+        scrollPane.setMaxWidth(largeurArrierePlanMarioClassique);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        imagePane.getChildren().add(scrollPane);
 
 
         mario = new ImageView(imagesMarioDroite[selectionCourante.ordinal()]);
         imagePane.getChildren().add(mario);
         imagePane.setOnMouseMoved(event -> {
-            if (selectionCourante == QuelMario.MARIO_CLASSIQUE) {
-                double nouveauX = event.getX() - mario.getImage().getWidth() / 2;
-                double nouveauY = event.getY() - mario.getImage().getHeight() / 2;
-                if (nouveauY < 0) {
-                    nouveauY = 0;
-                }
-                if (nouveauX < mario.getX()) {
-                    mario.setImage(imagesMarioGauche[selectionCourante.ordinal()]);
-                    marioRegardeVersLaDroite = false;
-                } else if (nouveauX > mario.getX()) {
-                    mario.setImage(imagesMarioDroite[selectionCourante.ordinal()]);
-                    marioRegardeVersLaDroite = true;
-                }
-                mario.setX(nouveauX);
-                mario.setY(nouveauY);
-            } else {
-                double diff = (event.getX() - positionSourisX) * rapportImageVersusPane;
-                mario.setImage(diff < 0
-                        ? imagesMarioGauche[selectionCourante.ordinal()]
-                        : imagesMarioDroite[selectionCourante.ordinal()]);
-                double nouveauX = arrierePlan.getX() - diff;
-                // one ne veut pas avoir l'image avec du blanc à la gauche
-                if (nouveauX > 0)
-                    nouveauX = 0;
-                // on ne veut pas trop décaler l'image vers la gauche
-                if (nouveauX < -largeurCalculeeArrierePlanMarioWorld + imagePane.getWidth())
-                    nouveauX = -largeurCalculeeArrierePlanMarioWorld + imagePane.getWidth();
-
-                arrierePlan.setX(nouveauX);
+            double nouveauX = event.getX() - mario.getImage().getWidth() / 2;
+            double nouveauY = event.getY() - mario.getImage().getHeight() / 2;
+            if (nouveauY < 0) {
+                nouveauY = 0;
             }
-            positionSourisX = event.getX();
-            positionSourisY = event.getY();
+
+             if (nouveauY > hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - TAILLE) {
+                nouveauY = hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - TAILLE;
+            }
+            if (nouveauX < mario.getX()) {
+                mario.setImage(imagesMarioGauche[selectionCourante.ordinal()]);
+                marioRegardeVersLaDroite = false;
+            } else if (nouveauX > mario.getX()) {
+                mario.setImage(imagesMarioDroite[selectionCourante.ordinal()]);
+                marioRegardeVersLaDroite = true;
+            }
+            mario.setX(nouveauX);
+            mario.setY(nouveauY);
         });
-        imagePane.setPrefSize(arrierePlan.getImage().getWidth(), arrierePlan.getImage().getHeight());
         return imagePane;
 
     }
 
     private void ajusterImages() {
-        arrierePlan.setImage(imagesArrierePlan[selectionCourante.ordinal()]);
-        arrierePlan.setX(0);
-        arrierePlan.setY(0);
-        if (selectionCourante == QuelMario.MARIO_WORLD) {
-            arrierePlan.setFitHeight(hauteurArrierePlanMarioClassique);
-            arrierePlan.setPreserveRatio(true);
-            System.out.println("imagesArrierePlan[selectionCourante.ordinal()].getWidth() = " + imagesArrierePlan[selectionCourante.ordinal()].getWidth());
-            System.out.println("imagesArrierePlan[selectionCourante.ordinal()].getHeight() = " + imagesArrierePlan[selectionCourante.ordinal()].getHeight());
-            System.out.println("arrierePlan.getFitWidth() = " + arrierePlan.getFitWidth());
-            System.out.println("arrierePlan.getFitHeight() = " + arrierePlan.getFitHeight());
-            System.out.println("imagePane.getWidth() = " + imagePane.getWidth());
-            System.out.println("imagePane.getHeight() = " + imagePane.getHeight());
-            // la largeur de l'arriere plan
-            largeurCalculeeArrierePlanMarioWorld = imagesArrierePlan[selectionCourante.ordinal()].getWidth() / imagesArrierePlan[selectionCourante.ordinal()].getHeight() *  imagePane.getHeight();
-            rapportImageVersusPane =  largeurCalculeeArrierePlanMarioWorld / imagePane.getWidth();
-        }
+        scrollPane.setContent(arrierePlanViews[selectionCourante.ordinal()] );
+        scrollPane.setMaxWidth(largeurArrierePlanMarioClassique);
+        arrierePlanViews[selectionCourante.ordinal()].setX(0);
+        arrierePlanViews[selectionCourante.ordinal()].setY(0);
         mario.setImage(marioRegardeVersLaDroite
                 ? imagesMarioDroite[selectionCourante.ordinal()]
                 : imagesMarioGauche[selectionCourante.ordinal()]);
-        if (selectionCourante == QuelMario.MARIO_WORLD) {
-            double nouveauX = (imagePane.getWidth() - mario.getImage().getWidth()) / 2;
-            double nouveauY = (imagePane.getHeight() - mario.getImage().getHeight()) / 2;
-            mario.setX(nouveauX);
-            mario.setY(nouveauY);
-        }
     }
     private Pane creerMenu() {
         HBox hBox = new HBox();
