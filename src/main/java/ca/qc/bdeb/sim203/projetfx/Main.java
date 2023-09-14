@@ -17,7 +17,6 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
-    final static double TAILLE = 15;
     public static void main(String[] args) {
         launch(args);
     }
@@ -32,8 +31,8 @@ public class Main extends Application {
 
     // deux arrierePlans et je ne vais que basculer entre les deux
     private ImageView[] arrierePlanViews;
-    private ImageView mario;
-    private QuelMario selectionCourante = QuelMario.MARIO_WORLD;
+    private ImageView mario = null;
+    private QuelMario selectionCourante = QuelMario.MARIO_CLASSIQUE;
 
     // la hauteur de la premiere image
     private double hauteurArrierePlanMarioClassique;
@@ -49,6 +48,8 @@ public class Main extends Application {
 
     private void creerImages() {
 
+        double largeurMario = 0;
+        double hauteurMario = 0;
         for (int i = 0; i < imagesArrierePlan.length; i++) {
             if (imagesArrierePlan[i] == null) {
                 imagesArrierePlan[i] = new Image(arrierePlans[i]);
@@ -62,10 +63,16 @@ public class Main extends Application {
                 }
             }
             if (imagesMarioDroite[i] == null) {
-                imagesMarioDroite[i] = new Image(marioDroite[i], 64, 64, true, true);
+                if (largeurMario == 0) {
+                    imagesMarioDroite[i] = new Image(marioDroite[i]);
+                    largeurMario = imagesMarioDroite[i].getWidth();
+                    hauteurMario = imagesMarioDroite[i].getHeight();
+                } else {
+                    imagesMarioDroite[i] = new Image(marioDroite[i], largeurMario, hauteurMario, true, true);
+                }
             }
             if (imagesMarioGauche[i] == null) {
-                imagesMarioGauche[i] = new Image(marioGauche[i], 64, 64, true, true);
+                imagesMarioGauche[i] = new Image(marioGauche[i], largeurMario, hauteurMario, true, true);
             }
         }
     }
@@ -82,13 +89,8 @@ public class Main extends Application {
             arrierePlanViews[quel.ordinal()] = new ImageView(imagesArrierePlan[quel.ordinal()]);
             arrierePlanViews[quel.ordinal()].setFitHeight(hauteurArrierePlanMarioClassique);
         }
-        scrollPane.setContent(arrierePlanViews[selectionCourante.ordinal()] );
-
-        scrollPane.setMaxWidth(largeurArrierePlanMarioClassique);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        ajusterImages();
         imagePane.getChildren().add(scrollPane);
-
 
         mario = new ImageView(imagesMarioDroite[selectionCourante.ordinal()]);
         imagePane.getChildren().add(mario);
@@ -99,8 +101,12 @@ public class Main extends Application {
                 nouveauY = 0;
             }
 
-             if (nouveauY > hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - TAILLE) {
-                nouveauY = hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - TAILLE;
+            double tampon = hauteurArrierePlanMarioClassique - scrollPane.getViewportBounds().getHeight();
+            if (tampon < 0)
+                tampon = 0;
+
+            if (nouveauY > hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - tampon) {
+                nouveauY = hauteurArrierePlanMarioClassique - mario.getImage().getHeight() - tampon;
             }
             if (nouveauX < mario.getX()) {
                 mario.setImage(imagesMarioGauche[selectionCourante.ordinal()]);
@@ -119,11 +125,19 @@ public class Main extends Application {
     private void ajusterImages() {
         scrollPane.setContent(arrierePlanViews[selectionCourante.ordinal()] );
         scrollPane.setMaxWidth(largeurArrierePlanMarioClassique);
+        if (arrierePlanViews[selectionCourante.ordinal()].getImage().getWidth() > largeurArrierePlanMarioClassique) {
+            scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        } else {
+            scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        }
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         arrierePlanViews[selectionCourante.ordinal()].setX(0);
         arrierePlanViews[selectionCourante.ordinal()].setY(0);
-        mario.setImage(marioRegardeVersLaDroite
-                ? imagesMarioDroite[selectionCourante.ordinal()]
-                : imagesMarioGauche[selectionCourante.ordinal()]);
+        if (mario != null) {
+            mario.setImage(marioRegardeVersLaDroite
+                    ? imagesMarioDroite[selectionCourante.ordinal()]
+                    : imagesMarioGauche[selectionCourante.ordinal()]);
+        }
     }
     private Pane creerMenu() {
         HBox hBox = new HBox();
